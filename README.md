@@ -1,4 +1,4 @@
-﻿# Ayansh Construction
+# Ayansh Construction
 
 A small, dependency-free Node.js website for Ayansh Construction. It serves a responsive public portfolio and enquiry form, plus a password-protected admin dashboard. Site content and enquiries are stored in SQLite.
 
@@ -152,6 +152,18 @@ The database and its `-wal` / `-shm` companion files are ignored by Git. Back up
 - Use secure environment-variable management, a process manager, durable database backups, and appropriate privacy and retention practices before using this for real enquiries.
 - Google Fonts and Unsplash photos are remote. A network connection is needed for those assets; system fonts and other page content remain available without them.
 
+## Netlify deployment
+
+The live site runs on Netlify instead of `server.js`, which cannot run there because it is a long-running process using a local SQLite file:
+
+- `public/` is published as static files. `netlify.toml` maps `/admin` to `admin.html` and applies the same security headers as the Node server.
+- `netlify/functions/api.mts` handles every `/api/*` route with the same request and response formats as `server.js`.
+- Data is stored in Netlify Database (Postgres). Tables are defined in `db/schema.ts`; migrations in `netlify/database/migrations/` are applied automatically on deploy and seed the default settings and services.
+- Set `ADMIN_PASSWORD` (at least 12 characters) in the Netlify environment variables. Until it is set, admin sign-in returns an error; the public site and enquiry form still work.
+- Sessions and login rate limiting are stored in the database because function instances do not share memory.
+
+After changing `db/schema.ts`, run `npx drizzle-kit generate --name <change_name>` to create a migration.
+
 ## Maintaining this reference
 
 When code or behavior changes, update this README in the same change. In particular, keep the project structure, configuration table, routes, database description, security notes, and run instructions aligned with the implementation. Record significant user-facing or architectural changes in a short dated entry below.
@@ -162,3 +174,4 @@ When code or behavior changes, update this README in the same change. In particu
 - 2026-10-20: Invalid percent-encoding in request paths now returns a client error, and malformed session cookies are treated as unauthenticated requests.
 - 2026-10-20: Added the supplied logo emblem to public and admin branding and set it as the browser icon.
 - 2026-10-20: Matched the public brand lockup text to the logo's “Building your tomorrow” tagline and removed the unused former favicon.
+- 2026-10-21: Added Netlify hosting: the API now runs as a Netlify Function backed by Netlify Database, so the site works when deployed to Netlify.
